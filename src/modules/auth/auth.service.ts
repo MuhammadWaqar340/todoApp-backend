@@ -20,6 +20,23 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService, // private readonly mailService: MailService
   ) {}
+
+  async validateUser(
+    email: string,
+    password: string,
+    validatePassword = false,
+  ): Promise<User> {
+    const user = await this.usersService.findOne('email', email);
+    if (user && (await comparePassword(password, user.password))) {
+      const { password, id, __v, createdAt, updatedAt, ...result } = JSON.parse(
+        JSON.stringify(user),
+      );
+      return result;
+    }
+    if (validatePassword)
+      throw new BadRequestException('Current password is invalid');
+    throw new BadRequestException('Invalid email or password');
+  }
   async login(user: User): Promise<LoginResponseDto> {
     const payload = { sub: user };
     const expiresIn = 60 * 60 * 24 * 2;
